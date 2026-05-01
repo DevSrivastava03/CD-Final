@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineVerse — Cinematic Universe Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Inter:wght@400;500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- Film-grain overlay -->
+  <canvas id="grain"></canvas>
+
+  <!-- 3-D canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- ══ SPLASH SCREEN ══ -->
+  <div id="splash">
+    <div id="splash-inner">
+      <div id="splash-eyebrow">
+        <span class="eyebrow-line"></span>
+        CINEMATIC UNIVERSE EXPLORER
+        <span class="eyebrow-line"></span>
+      </div>
+      <h1 id="splash-title">Cine<em>Verse</em></h1>
+      <p id="splash-sub">Twenty landmark films rendered as worlds.<br>Navigate the galaxy. Discover connections.</p>
+      <button id="splash-enter">
+        <span>Begin Exploration</span>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <!-- Animated star field on splash -->
+    <canvas id="splash-stars"></canvas>
+  </div>
+
+  <!-- ══ TOP BAR ══ -->
+  <header id="topbar">
+    <div id="logo">
+      <svg id="logo-mark" width="22" height="22" viewBox="0 0 22 22">
+        <circle cx="11" cy="11" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="11" y1="0" x2="11" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="11" y1="17" x2="11" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="0" y1="11" x2="5" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="17" y1="11" x2="22" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="11" cy="11" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="logo-text">Cine<em>Verse</em></span>
+    </div>
+
+    <div id="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">GALAXY LIVE</span>
+      <span class="status-sep">·</span>
+      <span id="status-count">20 WORLDS</span>
+      <span class="status-sep">·</span>
+      <span id="status-connections">47 CONNECTIONS</span>
+    </div>
+
+    <div id="topbar-right">
+      <div id="insight-chip" class="hidden">
+        <span id="insight-icon">◈</span>
+        <span id="insight-text"></span>
+      </div>
+      <button id="btn-reset">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M11 6.5A4.5 4.5 0 1 1 6.5 2a4.49 4.49 0 0 1 3.18 1.32" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M9.5 1v2.5H12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ LEFT LEGEND SIDEBAR ══ -->
+  <aside id="legend">
+    <div class="sidebar-section-label">Constellations</div>
+    <div id="legend-items"></div>
+
+    <div class="sidebar-rule"></div>
+
+    <div class="sidebar-section-label">Bonds</div>
+    <div class="bond-row">
+      <span class="bond-line bond-cast"></span>
+      <span class="bond-label">Shared cast</span>
+    </div>
+    <div class="bond-row">
+      <span class="bond-line bond-genre"></span>
+      <span class="bond-label">Same genre</span>
+    </div>
+  </aside>
+
+  <!-- ══ RIGHT INFO PANEL ══ -->
+  <div id="info-panel" class="hidden">
+    <button id="info-close">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <path d="M1 1l9 9M10 1l-9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <!-- Accent stripe top -->
+    <div id="panel-stripe"></div>
+
+    <div id="panel-header">
+      <div id="panel-index"></div>
+      <div id="panel-genre-tag"></div>
+    </div>
+
+    <div id="panel-title-area">
+      <h2 id="info-title"></h2>
+    </div>
+
+    <div id="panel-meta-row">
+      <div class="meta-block">
+        <div class="meta-value" id="info-year"></div>
+        <div class="meta-key">Year</div>
+      </div>
+      <div class="meta-sep"></div>
+      <div class="meta-block">
+        <div class="meta-value gold" id="info-rating"></div>
+        <div class="meta-key">IMDb</div>
+      </div>
+      <div class="meta-sep"></div>
+      <div class="meta-block meta-bar-block">
+        <div id="rating-track"><div id="rating-fill"></div></div>
+        <div class="meta-key">Score</div>
+      </div>
+    </div>
+
+    <div class="panel-rule"></div>
+
+    <p id="info-desc"></p>
+
+    <div class="panel-rule"></div>
+
+    <div class="panel-micro-label">CAST</div>
+    <div id="info-cast"></div>
+
+    <div id="info-visited" class="hidden">
+      <span class="v-pulse"></span>Previously charted
+    </div>
+  </div>
+
+  <!-- ══ HOVER TOOLTIP ══ -->
+  <div id="tooltip" class="hidden">
+    <div id="tt-title"></div>
+    <div id="tt-meta"></div>
+  </div>
+
+  <!-- ══ BOTTOM HUD STRIP ══ -->
+  <div id="bottom-hud">
+    <div class="hud-cell">
+      <span class="hud-val" id="hud-worlds">20</span>
+      <span class="hud-key">Worlds</span>
+    </div>
+    <div class="hud-pipe"></div>
+    <div class="hud-cell">
+      <span class="hud-val" id="hud-explored">0</span>
+      <span class="hud-key">Explored</span>
+    </div>
+    <div class="hud-pipe"></div>
+    <div class="hud-cell">
+      <span class="hud-val">6</span>
+      <span class="hud-key">Genres</span>
+    </div>
+    <div class="hud-pipe hud-pipe--grow"></div>
+    <div class="hud-cell hud-nav-hint">
+      <span>drag to orbit</span>
+      <span class="hint-sep">·</span>
+      <span>scroll to zoom</span>
+      <span class="hint-sep">·</span>
+      <span>click a star</span>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
