@@ -687,6 +687,179 @@ body {
 
 .hidden { display: none !important; }
 
+/* icon-only buttons (used on mobile) */
+.icon-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: var(--text-secondary);
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(10px);
+}
+.icon-btn:hover,
+.icon-btn[aria-expanded="true"] {
+  color: var(--amber);
+  border-color: rgba(232, 201, 122, 0.4);
+  box-shadow: 0 0 16px rgba(232, 201, 122, 0.12);
+}
+
+/* bottom-sheet drag handle (mobile only) */
+#panel-handle {
+  display: none;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 6px auto 14px;
+}
+
+/* nav hint variants */
+.hud-hint-touch { display: none; }
+
+/* hide hover-only affordances on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .hud-hint-pointer { display: none; }
+  .hud-hint-touch   { display: flex; }
+  #tooltip          { display: none !important; }
+}
+
+/* mobile layout */
+@media (max-width: 768px) {
+  :root {
+    --topbar-h: 50px;
+    --bottom-h: 38px;
+  }
+
+  #topbar {
+    padding: 0 14px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+
+  /* hide the middle status block — too cramped on phones */
+  #status-bar { display: none; }
+
+  /* topbar buttons */
+  #btn-legend { display: inline-flex; }
+  #btn-reset {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+  #btn-reset .btn-label { display: none; }
+
+  /* legend becomes a slide-down sheet from the topbar, hidden by default */
+  #legend {
+    top: calc(var(--topbar-h) + 8px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: 280px;
+    margin-left: auto;
+    transform-origin: top right;
+    transform: scale(0.96) translateY(-6px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    animation: none;
+  }
+  #legend.is-open {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+
+  /* info panel becomes a bottom sheet */
+  #info-panel {
+    top: auto;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 78vh;
+    border-left: none;
+    border-top: 1px solid var(--glass-edge);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 4px 22px 22px;
+    padding-bottom: max(22px, env(safe-area-inset-bottom));
+    animation: sheetSlideUp 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  #panel-handle { display: block; }
+  #panel-stripe {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  #info-close {
+    top: 14px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+  }
+  #panel-header { margin-top: 0; }
+  #info-title { font-size: 24px; }
+
+  /* bottom hud — drop the per-cell pipes between live cells, keep numbers compact */
+  #bottom-hud {
+    padding: 0 14px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+  .hud-cell { padding: 0 10px; }
+  .hud-cell:first-child { padding-left: 0; }
+  .hud-val { font-size: 14px; }
+  .hud-key { font-size: 9px; }
+  .hud-nav-hint { font-size: 10px; }
+
+  /* splash — tighter on small screens */
+  #splash-eyebrow { font-size: 10px; margin-bottom: 22px; }
+  .eyebrow-line { width: 28px; }
+  #splash-sub { font-size: 14px; padding: 0 24px; margin-bottom: 36px; }
+  #splash-enter { padding: 13px 26px; }
+
+  /* tap targets */
+  #splash-enter,
+  #btn-reset,
+  #btn-legend,
+  #info-close { min-height: 36px; }
+}
+
+/* very small phones */
+@media (max-width: 380px) {
+  #info-title { font-size: 22px; }
+  #panel-meta-row { padding: 10px 12px; }
+  .hud-nav-hint { display: none; }
+}
+
+/* short landscape — keep splash readable */
+@media (max-height: 520px) and (orientation: landscape) {
+  #splash-title { font-size: clamp(3rem, 9vh, 5rem); margin-bottom: 14px; }
+  #splash-sub { margin-bottom: 22px; }
+  #splash-eyebrow { margin-bottom: 14px; }
+}
+
+/* respect users who ask for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* keyboard focus indicator (for accessibility) */
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* keyframes */
 @keyframes splashReveal {
   from { opacity: 0; transform: translateY(24px); }
@@ -703,6 +876,10 @@ body {
 @keyframes panelSlideIn {
   from { opacity: 0; transform: translateX(30px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes sheetSlideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }

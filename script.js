@@ -517,11 +517,15 @@ function openPanel(planet) {
 function closePanel() { panel.classList.add('hidden'); }
 document.getElementById('info-close').addEventListener('click', closePanel);
 
+// Touch-only devices don't get the hover tooltip — finger covers it anyway.
+const IS_TOUCH = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
 const tooltip = document.getElementById('tooltip');
 const ttTitle = document.getElementById('tt-title');
 const ttMeta  = document.getElementById('tt-meta');
 
 function showTooltip(planet, x, y) {
+  if (IS_TOUCH) return;
   ttTitle.textContent = planet.movie.title;
   ttMeta.textContent  = `${planet.movie.genre}  ·  ${planet.movie.year}`;
   ttTitle.style.borderColor = planet.cssColor;
@@ -626,6 +630,26 @@ function resetView() {
 }
 
 document.getElementById('btn-reset').addEventListener('click', resetView);
+
+// Legend toggle (mobile). Tap the icon to reveal, tap outside to dismiss.
+(function initLegendToggle() {
+  const btn = document.getElementById('btn-legend');
+  const legendEl = document.getElementById('legend');
+  if (!btn || !legendEl) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = legendEl.classList.toggle('is-open');
+    btn.setAttribute('aria-expanded', String(open));
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!legendEl.classList.contains('is-open')) return;
+    if (legendEl.contains(e.target) || btn.contains(e.target)) return;
+    legendEl.classList.remove('is-open');
+    btn.setAttribute('aria-expanded', 'false');
+  });
+})();
 
 window.addEventListener('resize', () => {
   const W = container.clientWidth, H = container.clientHeight;
