@@ -27,7 +27,7 @@
         <span class="eyebrow-line"></span>
       </div>
       <h1 id="splash-title">Cine<em>Verse</em></h1>
-      <p id="splash-sub">Twenty landmark films rendered as worlds.<br>Navigate the galaxy. Discover connections.</p>
+      <p id="splash-sub">Twenty films plotted by genre, year, and rating.<br>Select a world to follow the threads between them.</p>
       <button id="splash-enter">
         <span>Begin Exploration</span>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -93,7 +93,7 @@
 
     <div class="sidebar-rule"></div>
 
-    <div class="sidebar-section-label">Bonds</div>
+    <div class="sidebar-section-label">Reading the galaxy</div>
     <div class="bond-row">
       <span class="bond-line bond-cast"></span>
       <span class="bond-label">Shared cast</span>
@@ -101,6 +101,25 @@
     <div class="bond-row">
       <span class="bond-line bond-genre"></span>
       <span class="bond-label">Same genre</span>
+    </div>
+    <div class="bond-row">
+      <span class="bond-symbol" aria-hidden="true">
+        <svg width="30" height="10" viewBox="0 0 30 10">
+          <circle cx="6"  cy="5" r="2.4" fill="currentColor" opacity="0.55"/>
+          <circle cx="22" cy="5" r="4.2" fill="currentColor" opacity="0.55"/>
+        </svg>
+      </span>
+      <span class="bond-label">Size = rating</span>
+    </div>
+    <div class="bond-row">
+      <span class="bond-symbol" aria-hidden="true">
+        <svg width="30" height="14" viewBox="0 0 30 14">
+          <line x1="15" y1="2" x2="15" y2="12" stroke="currentColor" stroke-width="1" opacity="0.55"/>
+          <polyline points="12,4 15,1 18,4" fill="none" stroke="currentColor" stroke-width="1" opacity="0.55"/>
+          <polyline points="12,10 15,13 18,10" fill="none" stroke="currentColor" stroke-width="1" opacity="0.55"/>
+        </svg>
+      </span>
+      <span class="bond-label">Height = year</span>
     </div>
   </aside>
 
@@ -150,6 +169,11 @@
 
     <div class="panel-micro-label">CAST</div>
     <div id="info-cast"></div>
+
+    <div class="panel-rule"></div>
+
+    <div class="panel-micro-label">CONNECTIONS <span id="info-conn-count"></span></div>
+    <div id="info-conn"></div>
 
     <div id="info-visited" class="hidden">
       <span class="v-pulse"></span>Previously charted

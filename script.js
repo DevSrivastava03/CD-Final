@@ -18,6 +18,13 @@ const GENRE_CLUSTERS = {
   'Animation': { x:  12,  z:  85 },
 };
 
+// The Y-axis encodes release year — older films sit lower, newer ones rise toward the top.
+// Combined with x/z (genre cluster) and planet size (rating), the 3D layout has three real axes.
+const YEAR_MIN = 1972;
+const YEAR_MAX = 2019;
+const Y_RANGE  = 32;
+const yearToY = year => -Y_RANGE + ((year - YEAR_MIN) / (YEAR_MAX - YEAR_MIN)) * (Y_RANGE * 2);
+
 const MOVIES = [
   { id:'inception',      title:'Inception',                          genre:'Sci-Fi',    year:2010, rating:8.8, cast:['Leonardo DiCaprio','Joseph Gordon-Levitt','Tom Hardy','Ellen Page'],       description:'A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.' },
   { id:'interstellar',   title:'Interstellar',                       genre:'Sci-Fi',    year:2014, rating:8.6, cast:['Matthew McConaughey','Anne Hathaway','Jessica Chastain','Michael Caine'],  description:'A team of explorers travel through a wormhole in space in an attempt to ensure humanity\'s survival.' },
@@ -169,15 +176,20 @@ function makeGlowSprite(hexColor, opacity = 0.7) {
   return new THREE.Sprite(mat);
 }
 
-// Pair up films: shared cast wins; otherwise same-genre.
+// Pair up films: shared cast wins; otherwise same-genre. Each edge carries the reason for the bond.
 function buildEdges(movies) {
   const edges = [];
   for (let i = 0; i < movies.length; i++) {
     for (let j = i + 1; j < movies.length; j++) {
       const a = movies[i], b = movies[j];
       const shared = a.cast.filter(x => b.cast.includes(x));
-      if (shared.length) { edges.push({ i, j, type: 'cast' }); continue; }
-      if (a.genre === b.genre) edges.push({ i, j, type: 'genre' });
+      if (shared.length) {
+        edges.push({ i, j, type: 'cast', reason: shared.join(', ') });
+        continue;
+      }
+      if (a.genre === b.genre) {
+        edges.push({ i, j, type: 'genre', reason: a.genre });
+      }
     }
   }
   return edges;
@@ -316,7 +328,7 @@ MOVIES.forEach((movie, idx) => {
   const cluster      = GENRE_CLUSTERS[movie.genre];
 
   const px = jitter(cluster.x, 42);
-  const py = jitter(0, 16);
+  const py = yearToY(movie.year) + (Math.random() - 0.5) * 4;
   const pz = jitter(cluster.z, 42);
 
   // Radius scales with rating, anchored at 7.0.
@@ -395,7 +407,7 @@ edges.forEach(edge => {
     });
     const line = new THREE.LineSegments(geo, mat);
     scene.add(line);
-    edgeObjects.push({ line, mat, type: 'cast', base: 0.55 });
+    edgeObjects.push({ line, mat, type: 'cast', base: 0.55, i: edge.i, j: edge.j, reason: edge.reason });
   } else {
     const geo = new THREE.BufferGeometry().setFromPoints([a.clone(), b.clone()]);
     const mat = new THREE.LineBasicMaterial({
@@ -404,9 +416,19 @@ edges.forEach(edge => {
     });
     const line = new THREE.Line(geo, mat);
     scene.add(line);
-    edgeObjects.push({ line, mat, type: 'genre', base: 0.18 });
+    edgeObjects.push({ line, mat, type: 'genre', base: 0.18, i: edge.i, j: edge.j, reason: edge.reason });
   }
 });
+
+// Adjacency list: each film's neighbors plus the bond reason. Cast bonds first — they're more meaningful.
+const neighborsByIdx = MOVIES.map(() => []);
+edges.forEach(e => {
+  neighborsByIdx[e.i].push({ otherIdx: e.j, type: e.type, reason: e.reason });
+  neighborsByIdx[e.j].push({ otherIdx: e.i, type: e.type, reason: e.reason });
+});
+neighborsByIdx.forEach(list => list.sort((a, b) =>
+  (a.type === 'cast' ? 0 : 1) - (b.type === 'cast' ? 0 : 1)
+));
 
 const legendEl = document.getElementById('legend-items');
 Object.entries(GENRE_COLORS).forEach(([genre, { css }]) => {
@@ -440,19 +462,46 @@ function markVisited(id) {
   localStorage.setItem(VISITED_KEY, JSON.stringify(v));
 }
 
-function applyVisitedGlow() {
-  const v = getVisited();
-  planetData.forEach(p => {
-    if (v[p.movie.id]) {
-      p.mesh.scale.setScalar(1.18);
-      p.innerGlow.scale.setScalar(p.baseR * 6.5);
-      p.outerGlow.scale.setScalar(p.baseR * 13);
-      p.mesh.material.emissiveIntensity = 0.7;
-    }
-  });
-  document.getElementById('hud-explored').textContent = Object.keys(v).length;
+// Selection drives a five-state visual model: each planet sits in one of these states
+// at any moment, and edges are either "active" (touch the selection) or not.
+let selectedIdx = null;
+
+const STATE = {
+  selected: { emissive: 1.40, scale: 1.20, innerMul: 8.0, outerMul: 17.0, glowOpacity: 1.00 },
+  related:  { emissive: 0.85, scale: 1.10, innerMul: 6.5, outerMul: 13.0, glowOpacity: 0.90 },
+  visited:  { emissive: 0.70, scale: 1.18, innerMul: 6.5, outerMul: 13.0, glowOpacity: 0.85 },
+  normal:   { emissive: 0.35, scale: 1.00, innerMul: 4.5, outerMul:  9.0, glowOpacity: 0.70 },
+  dimmed:   { emissive: 0.08, scale: 0.92, innerMul: 3.0, outerMul:  6.0, glowOpacity: 0.20 },
+};
+
+function applyPlanetState(p, name) {
+  const s = STATE[name];
+  p.mesh.material.emissiveIntensity = s.emissive;
+  p.mesh.scale.setScalar(s.scale);
+  p.innerGlow.scale.setScalar(p.baseR * s.innerMul);
+  p.outerGlow.scale.setScalar(p.baseR * s.outerMul);
+  p.innerGlow.material.opacity = s.glowOpacity;
+  p.outerGlow.material.opacity = s.glowOpacity * 0.5;
 }
-applyVisitedGlow();
+
+function planetBaseState(p) {
+  if (selectedIdx === null) {
+    return getVisited()[p.movie.id] ? 'visited' : 'normal';
+  }
+  if (p.idx === selectedIdx) return 'selected';
+  const isRelated = neighborsByIdx[selectedIdx].some(n => n.otherIdx === p.idx);
+  return isRelated ? 'related' : 'dimmed';
+}
+
+function refreshPlanetStates() {
+  planetData.forEach(p => applyPlanetState(p, planetBaseState(p)));
+  edgeObjects.forEach(e => {
+    e.isActive = (selectedIdx === null) || (e.i === selectedIdx || e.j === selectedIdx);
+  });
+  document.getElementById('hud-explored').textContent = Object.keys(getVisited()).length;
+}
+
+refreshPlanetStates();
 
 // "You drift toward X" — surfaces once a genre crosses 2 visits.
 function updateInsight() {
@@ -506,6 +555,40 @@ function openPanel(planet) {
     castEl.appendChild(tag);
   });
 
+  // Connections — clickable chips that fly to each related film and tell you the reason for the bond.
+  const connEl   = document.getElementById('info-conn');
+  const countEl  = document.getElementById('info-conn-count');
+  const neighbors = neighborsByIdx[idx] || [];
+  connEl.innerHTML = '';
+  countEl.textContent = neighbors.length ? `· ${neighbors.length}` : '';
+
+  if (!neighbors.length) {
+    const empty = document.createElement('div');
+    empty.className   = 'conn-empty';
+    empty.textContent = 'No bonds with the other twenty.';
+    connEl.appendChild(empty);
+  } else {
+    neighbors.forEach(n => {
+      const other = MOVIES[n.otherIdx];
+      const chip  = document.createElement('button');
+      chip.className = `conn-chip conn-${n.type}`;
+      chip.setAttribute('aria-label', `Open ${other.title} — ${n.reason}`);
+
+      const title = document.createElement('span');
+      title.className   = 'conn-title';
+      title.textContent = other.title;
+
+      const reason = document.createElement('span');
+      reason.className   = 'conn-reason';
+      reason.textContent = n.type === 'cast' ? n.reason : `Same genre · ${n.reason}`;
+
+      chip.appendChild(title);
+      chip.appendChild(reason);
+      chip.addEventListener('click', () => navigateToPlanet(planetData[n.otherIdx]));
+      connEl.appendChild(chip);
+    });
+  }
+
   document.getElementById('info-visited').classList.toggle('hidden', !getVisited()[movie.id]);
 
   panel.classList.remove('hidden');
@@ -514,7 +597,14 @@ function openPanel(planet) {
   panel.style.animation = '';
 }
 
-function closePanel() { panel.classList.add('hidden'); }
+function closePanel() {
+  panel.classList.add('hidden');
+  // Closing the panel also returns the galaxy to its full network view.
+  if (selectedIdx !== null) {
+    selectedIdx = null;
+    refreshPlanetStates();
+  }
+}
 document.getElementById('info-close').addEventListener('click', closePanel);
 
 // Touch-only devices don't get the hover tooltip — finger covers it anyway.
@@ -566,35 +656,37 @@ renderer.domElement.addEventListener('mousemove', e => {
   }
 });
 
+// Selecting a planet: mark it visited, focus the camera, and rebuild visual states so
+// the local network of bonds stands out.
+function navigateToPlanet(planet) {
+  markVisited(planet.movie.id);
+  selectedIdx = planet.idx;
+  refreshPlanetStates();
+  updateInsight();
+  openPanel(planet);
+  zoomTo(planet);
+  hideTooltip();
+}
+
 renderer.domElement.addEventListener('click', e => {
   getNDC(e);
   raycaster.setFromCamera(mouse, camera);
   const hits = raycaster.intersectObjects(planetData.map(p => p.mesh));
   if (hits.length) {
     const planet = planetData.find(p => p.mesh === hits[0].object);
-    if (planet) {
-      markVisited(planet.movie.id);
-      applyVisitedGlow();
-      updateInsight();
-      openPanel(planet);
-      zoomTo(planet);
-      hideTooltip();
-    }
+    if (planet) navigateToPlanet(planet);
   }
 });
 
+// Hover preview — bumps the planet without committing to a selection.
 function boostGlow(p) {
   p.mesh.material.emissiveIntensity = 1.2;
   p.innerGlow.scale.setScalar(p.baseR * 7.5);
   p.outerGlow.scale.setScalar(p.baseR * 15);
-  p.mesh.scale.setScalar(1.1);
+  p.mesh.scale.setScalar(1.12);
 }
 function resetGlow(p) {
-  const visited = getVisited()[p.movie.id];
-  p.mesh.material.emissiveIntensity = visited ? 0.7 : 0.35;
-  p.innerGlow.scale.setScalar(visited ? p.baseR * 6.5  : p.baseR * 4.5);
-  p.outerGlow.scale.setScalar(visited ? p.baseR * 13   : p.baseR * 9);
-  p.mesh.scale.setScalar(visited ? 1.18 : 1.0);
+  applyPlanetState(p, planetBaseState(p));
 }
 
 let tween = null;
@@ -674,10 +766,15 @@ function animate() {
     p.outerGlow.position.copy(p.mesh.position);
   });
 
-  // Pulse cast edges so they feel alive.
+  // Edges: cast bonds pulse softly when "active" (no selection, or this edge touches the selection).
+  // When something is selected, non-active edges fade to a near-invisible whisper.
   edgeObjects.forEach((e, i) => {
-    if (e.type === 'cast') {
-      e.mat.opacity = e.base * (0.55 + 0.45 * Math.sin(t * 0.9 + i * 0.7));
+    if (e.isActive) {
+      e.mat.opacity = e.type === 'cast'
+        ? e.base * (0.55 + 0.45 * Math.sin(t * 0.9 + i * 0.7))
+        : e.base;
+    } else {
+      e.mat.opacity = 0.04;
     }
   });
 

@@ -373,6 +373,14 @@ body {
   height: 1.5px;
   flex-shrink: 0;
 }
+.bond-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
 .bond-cast {
   background: linear-gradient(90deg, transparent 0%, var(--amber) 30%, var(--amber) 70%, transparent 100%);
   opacity: 0.8;
@@ -564,6 +572,68 @@ body {
   color: var(--panel-color, var(--amber));
   border-color: var(--panel-color, var(--amber));
   background: rgba(255,255,255,0.06);
+}
+
+/* connections */
+#info-conn-count {
+  font-family: var(--f-mono);
+  color: var(--text-secondary);
+  letter-spacing: var(--track-loose);
+  margin-left: 4px;
+  text-transform: none;
+}
+
+#info-conn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 18px;
+}
+
+.conn-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  font-family: var(--f-text);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--glass-edge);
+  border-left-width: 2px;
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
+  color: inherit;
+}
+.conn-chip:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--panel-color, var(--amber));
+  transform: translateX(2px);
+}
+.conn-cast { border-left-color: var(--amber); }
+.conn-genre { border-left-color: rgba(122, 117, 150, 0.6); }
+
+.conn-title {
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.conn-reason {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.conn-empty {
+  font-family: var(--f-text);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-tertiary);
+  padding: 8px 0;
 }
 
 #info-visited {
@@ -842,6 +912,83 @@ body {
   #splash-title { font-size: clamp(3rem, 9vh, 5rem); margin-bottom: 14px; }
   #splash-sub { margin-bottom: 22px; }
   #splash-eyebrow { margin-bottom: 14px; }
+}
+
+/* large displays — scale chrome up so 4K monitors don't shrink everything to a postage stamp */
+@media (min-width: 1600px) {
+  :root {
+    --topbar-h: 64px;
+    --bottom-h: 52px;
+    --panel-w:  440px;
+    --legend-w: 230px;
+  }
+  html, body { font-size: 16px; }
+
+  .logo-text         { font-size: 22px; }
+  #status-bar        { font-size: 13px; }
+  #btn-reset,
+  #btn-legend,
+  #insight-chip     { font-size: 13px; }
+  #btn-reset { padding: 9px 18px; }
+
+  .sidebar-section-label { font-size: 12px; }
+  .legend-item       { font-size: 15px; }
+  .bond-row,
+  .bond-label        { font-size: 14px; }
+
+  #info-panel        { padding: 36px 32px; }
+  #panel-index       { font-size: 12px; }
+  #panel-genre-tag   { font-size: 12px; padding: 4px 12px; }
+  #info-title        { font-size: 36px; }
+  .meta-value        { font-size: 22px; }
+  .meta-key,
+  .panel-micro-label,
+  #info-conn-count   { font-size: 12px; }
+  #info-desc         { font-size: 16px; line-height: 1.7; }
+  .cast-tag          { font-size: 13px; padding: 5px 12px; }
+  .conn-title        { font-size: 15px; }
+  .conn-reason       { font-size: 12px; }
+  .conn-chip         { padding: 11px 14px; }
+
+  #tt-title          { font-size: 17px; padding: 9px 16px 7px; }
+  #tt-meta           { font-size: 12px; padding: 4px 16px 9px; }
+
+  .hud-val           { font-size: 22px; }
+  .hud-key           { font-size: 12px; }
+  .hud-nav-hint      { font-size: 13px; }
+  .hud-cell          { padding: 0 22px; }
+}
+
+/* very large 4K+ displays — bump again */
+@media (min-width: 2400px) {
+  :root {
+    --topbar-h: 80px;
+    --bottom-h: 64px;
+    --panel-w:  560px;
+    --legend-w: 280px;
+  }
+  html, body { font-size: 19px; }
+
+  .logo-text         { font-size: 28px; }
+  #info-title        { font-size: 48px; }
+  #info-desc         { font-size: 19px; line-height: 1.75; }
+  .meta-value        { font-size: 28px; }
+  .conn-title        { font-size: 18px; }
+  .conn-reason       { font-size: 14px; }
+  .conn-chip         { padding: 14px 18px; }
+  .cast-tag          { font-size: 15px; padding: 6px 14px; }
+  .legend-item       { font-size: 18px; }
+  .bond-label        { font-size: 16px; }
+
+  .hud-val           { font-size: 28px; }
+  .hud-key           { font-size: 14px; }
+  .hud-nav-hint      { font-size: 15px; }
+
+  #status-bar,
+  #btn-reset,
+  #btn-legend,
+  #insight-chip     { font-size: 15px; }
+  #btn-reset { padding: 11px 22px; }
 }
 
 /* respect users who ask for reduced motion */
